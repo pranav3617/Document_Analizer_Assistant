@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>RAG Assistant</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI",
+                         Roboto, Arial, sans-serif;
+            background: #f5f7fb;
+            color: #1f2937;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            height: 70px;
+            background: #ffffff;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 7%;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 20px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .brand-icon {
+            width: 38px;
+            height: 38px;
+            background: #2563eb;
+            color: white;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #6b7280;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #22c55e;
+            border-radius: 50%;
+        }
+
+        .container {
+            width: min(1100px, 92%);
+            margin: 45px auto;
+        }
+
+        .page-header {
+            margin-bottom: 30px;
+        }
+
+        .page-header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 8px;
+        }
+
+        .page-header p {
+            color: #6b7280;
+            font-size: 15px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            gap: 24px;
+        }
+
+        .card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            padding: 24px;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.03);
+        }
+
+        .card-title {
+            font-size: 17px;
+            font-weight: 650;
+            color: #111827;
+            margin-bottom: 6px;
+        }
+
+        .card-description {
+            font-size: 13px;
+            color: #6b7280;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .upload-area {
+            border: 1.5px dashed #cbd5e1;
+            border-radius: 12px;
+            padding: 30px 20px;
+            text-align: center;
+            background: #f8fafc;
+            cursor: pointer;
+            transition: 0.2s ease;
+        }
+
+        .upload-area:hover {
+            border-color: #2563eb;
+            background: #eff6ff;
+        }
+
+        .upload-icon {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 14px;
+            border-radius: 12px;
+            background: #dbeafe;
+            color: #2563eb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+        }
+
+        .upload-area h3 {
+            font-size: 14px;
+            margin-bottom: 6px;
+            color: #374151;
+        }
+
+        .upload-area p {
+            font-size: 12px;
+            color: #9ca3af;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .file-info {
+            display: none;
+            margin-top: 15px;
+            padding: 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 9px;
+            background: #f9fafb;
+        }
+
+        .file-info.active {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .file-icon {
+            width: 34px;
+            height: 34px;
+            background: #eff6ff;
+            color: #2563eb;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .file-details {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .file-name {
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .file-type {
+            font-size: 11px;
+            color: #9ca3af;
+            margin-top: 2px;
+        }
+
+        .btn {
+            width: 100%;
+            border: none;
+            border-radius: 9px;
+            padding: 12px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s ease;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+            margin-top: 15px;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-primary:disabled {
+            background: #93c5fd;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #ffffff;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+            margin-top: 10px;
+        }
+
+        .btn-secondary:hover {
+            background: #fef2f2;
+        }
+
+        .file-info-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 9px;
+            background: #f9fafb;
+            margin-top: 10px;
+        }
+
+        .file-info-item .file-name {
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+        }
+
+        .file-info-item .file-type {
+            font-size: 11px;
+            color: #9ca3af;
+        }
+
+        .loaded-files {
+            margin-top: 18px;
+        }
+
+        .loaded-files h4 {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .loaded-file-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            background: #eff6ff;
+            color: #1d4ed8;
+            border-radius: 999px;
+            padding: 5px 10px;
+            margin: 0 6px 6px 0;
+        }
+
+        .upload-status {
+            display: none;
+            margin-top: 14px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+        }
+
+        .upload-status.show {
+            display: block;
+        }
+
+        .upload-status.success {
+            background: #ecfdf5;
+            color: #047857;
+            border: 1px solid #a7f3d0;
+        }
+
+        .upload-status.error {
+            background: #fef2f2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+        }
+
+        .question-box {
+            position: relative;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 105px;
+            resize: vertical;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+            padding: 14px;
+            font-family: inherit;
+            font-size: 14px;
+            color: #111827;
+            outline: none;
+            transition: 0.2s ease;
+        }
+
+        textarea:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+        }
+
+        .question-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .hint {
+            font-size: 11px;
+            color: #9ca3af;
+        }
+
+        .ask-btn {
+            background: #111827;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .ask-btn:hover {
+            background: #000000;
+        }
+
+        .ask-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .answer-section {
+            margin-top: 24px;
+        }
+
+        .answer-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .ai-icon {
+            width: 34px;
+            height: 34px;
+            background: #ede9fe;
+            color: #7c3aed;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .answer-label {
+            font-size: 14px;
+            font-weight: 650;
+        }
+
+        .answer-box {
+            min-height: 180px;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            background: #fafafa;
+            padding: 18px;
+            font-size: 14px;
+            line-height: 1.7;
+            color: #374151;
+            white-space: pre-wrap;
+        }
+
+        .empty-answer {
+            color: #9ca3af;
+            font-size: 13px;
+            text-align: center;
+            padding-top: 55px;
+        }
+
+        .loading {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            color: #6b7280;
+            font-size: 13px;
+        }
+
+        .loading.active {
+            display: flex;
+        }
+
+        .spinner {
+            width: 15px;
+            height: 15px;
+            border: 2px solid #dbeafe;
+            border-top-color: #2563eb;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 35px;
+            font-size: 12px;
+            color: #9ca3af;
+        }
+
+        @media (max-width: 850px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .navbar {
+                padding: 0 4%;
+            }
+
+            .container {
+                margin-top: 30px;
+            }
+        }
+
+        @media (max-width: 500px) {
+            .page-header h1 {
+                font-size: 25px;
+            }
+
+            .question-footer {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .ask-btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <div class="brand">
+            <div class="brand-icon">R</div>
+            <span>RAG Assistant</span>
+        </div>
+
+        <div class="status">
+            <span class="status-dot"></span>
+            System Online
+        </div>
+    </nav>
+
+    <main class="container">
+
+        <div class="page-header">
+            <h1>Document Intelligence</h1>
+            <p>Upload a document and ask questions using Retrieval-Augmented Generation.</p>
+        </div>
+
+        <div class="grid">
+
+            <section class="card">
+
+                <div class="card-title">Upload Documents</div>
+
+                <div class="card-description">
+                    Upload one or more documents to build a searchable knowledge base for the AI assistant.
+                </div>
+
+                <label for="fileInput" class="upload-area">
+                    <div class="upload-icon">↑</div>
+                    <h3>Click to upload documents</h3>
+                    <p>PDF, DOCX or TXT files — select multiple at once</p>
+                </label>
+
+                <input type="file" id="fileInput" accept=".pdf,.docx,.txt" multiple>
+
+                <div class="file-info" id="fileInfo"></div>
+
+                <button class="btn btn-primary" id="uploadBtn" disabled>Upload & Process</button>
+                <button class="btn btn-secondary" id="clearBtn" style="display:none;">Clear All Documents</button>
+
+                <div class="upload-status" id="uploadStatus"></div>
+
+                <div class="loaded-files" id="loadedFiles"></div>
+
+            </section>
+
+            <section class="card">
+
+                <div class="card-title">Ask a Question</div>
+
+                <div class="card-description">
+                    Ask a question about the uploaded document. The AI will retrieve relevant information before generating the answer.
+                </div>
+
+                <div class="question-box">
+                    <textarea id="questionInput" placeholder="Example: What is the main purpose of this document?"></textarea>
+
+                    <div class="question-footer">
+                        <span class="hint">Press Ctrl + Enter to submit</span>
+                        <button class="ask-btn" id="askBtn" disabled>Ask Question</button>
+                    </div>
+                </div>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <span>Searching document and generating answer...</span>
+                </div>
+
+                <div class="answer-section">
+                    <div class="answer-header">
+                        <div class="ai-icon">✦</div>
+                        <div class="answer-label">AI Response</div>
+                    </div>
+
+                    <div class="answer-box" id="answerBox">
+                        <div class="empty-answer">Your answer will appear here.</div>
+                    </div>
+                </div>
+
+            </section>
+
+        </div>
+
+        <div class="footer">RAG Assistant • Powered by FastAPI and Groq</div>
+
+    </main>
+
+    <script>
+        const fileInput = document.getElementById("fileInput");
+        const fileInfo = document.getElementById("fileInfo");
+
+        const uploadBtn = document.getElementById("uploadBtn");
+        const clearBtn = document.getElementById("clearBtn");
+        const uploadStatus = document.getElementById("uploadStatus");
+        const loadedFilesBox = document.getElementById("loadedFiles");
+
+        const questionInput = document.getElementById("questionInput");
+        const askBtn = document.getElementById("askBtn");
+        const answerBox = document.getElementById("answerBox");
+        const loading = document.getElementById("loading");
+
+        let selectedFiles = [];
+        let documentUploaded = false;
+        let loadedFileNames = [];
+
+        function renderSelectedFiles() {
+            fileInfo.innerHTML = "";
+
+            selectedFiles.forEach(function (file) {
+                const extension = file.name.split(".").pop().toUpperCase();
+
+                const item = document.createElement("div");
+                item.className = "file-info-item";
+                item.innerHTML =
+                    '<div class="file-icon">📄</div>' +
+                    '<div class="file-details">' +
+                        '<div class="file-name"></div>' +
+                        '<div class="file-type"></div>' +
+                    '</div>';
+
+                item.querySelector(".file-name").textContent = file.name;
+                item.querySelector(".file-type").textContent = extension + " Document";
+
+                fileInfo.appendChild(item);
+            });
+        }
+
+        function renderLoadedFiles() {
+            if (loadedFileNames.length === 0) {
+                loadedFilesBox.innerHTML = "";
+                clearBtn.style.display = "none";
+                return;
+            }
+
+            let html = "<h4>Documents in this session (" + loadedFileNames.length + ")</h4>";
+            loadedFileNames.forEach(function (name) {
+                html += '<span class="loaded-file-pill">📄 ' + name + "</span>";
+            });
+
+            loadedFilesBox.innerHTML = html;
+            clearBtn.style.display = "block";
+        }
+
+        fileInput.addEventListener("change", function () {
+            selectedFiles = Array.from(this.files);
+
+            if (selectedFiles.length === 0) {
+                uploadBtn.disabled = true;
+                return;
+            }
+
+            renderSelectedFiles();
+            uploadBtn.disabled = false;
+
+            uploadStatus.className = "upload-status";
+            uploadStatus.textContent = "";
+        });
+
+        uploadBtn.addEventListener("click", async function () {
+            if (selectedFiles.length === 0) return;
+
+            uploadBtn.disabled = true;
+            uploadBtn.textContent = "Processing...";
+            uploadStatus.className = "upload-status";
+            uploadStatus.textContent = "";
+
+            const formData = new FormData();
+            selectedFiles.forEach(function (file) {
+                formData.append("file", file);
+            });
+
+            try {
+                const response = await fetch("/upload", {
+                    method: "POST",
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.detail || "Failed to upload document(s).");
+                }
+
+                let statusMsg = data.message || "Documents processed successfully.";
+
+                const skipped = (data.details && data.details.files_skipped) || [];
+                const rejected = (data.details && data.details.files_rejected) || [];
+
+                if (skipped.length > 0 || rejected.length > 0) {
+                    const problems = skipped.concat(rejected)
+                        .map(function (p) { return p.file + " (" + p.reason + ")"; })
+                        .join(", ");
+                    statusMsg += " Skipped: " + problems;
+                }
+
+                uploadStatus.textContent = statusMsg;
+                uploadStatus.className = "upload-status show success";
+
+                documentUploaded = true;
+                askBtn.disabled = false;
+
+                if (data.details && Array.isArray(data.details.files_processed)) {
+                    loadedFileNames = loadedFileNames.concat(data.details.files_processed);
+                    renderLoadedFiles();
+                }
+
+                selectedFiles = [];
+                fileInput.value = "";
+                fileInfo.innerHTML = "";
+
+            } catch (error) {
+                uploadStatus.textContent = error.message;
+                uploadStatus.className = "upload-status show error";
+            }
+
+            uploadBtn.disabled = selectedFiles.length === 0;
+            uploadBtn.textContent = "Upload & Process";
+        });
+
+        clearBtn.addEventListener("click", async function () {
+            clearBtn.disabled = true;
+            clearBtn.textContent = "Clearing...";
+
+            try {
+                await fetch("/clear", { method: "POST" });
+            } catch (error) {
+                // ignore network errors here, we still reset the UI below
+            }
+
+            loadedFileNames = [];
+            documentUploaded = false;
+            askBtn.disabled = true;
+            renderLoadedFiles();
+
+            uploadStatus.textContent = "All documents cleared.";
+            uploadStatus.className = "upload-status show success";
+
+            clearBtn.disabled = false;
+            clearBtn.textContent = "Clear All Documents";
+        });
+
+        askBtn.addEventListener("click", askQuestion);
+
+        async function askQuestion() {
+            const question = questionInput.value.trim();
+            if (!question) {
+                questionInput.focus();
+                return;
+            }
+
+            if (!documentUploaded) {
+                alert("Please upload and process a document first.");
+                return;
+            }
+
+            askBtn.disabled = true;
+            loading.classList.add("active");
+            answerBox.innerHTML = "";
+
+            try {
+                const response = await fetch("/ask", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ question: question })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.detail || "Unable to generate answer.");
+                }
+
+                answerBox.textContent = data.answer || "No answer was returned.";
+
+            } catch (error) {
+                answerBox.textContent = "Error: " + error.message;
+            }
+
+            loading.classList.remove("active");
+            askBtn.disabled = false;
+        }
+
+        questionInput.addEventListener("keydown", function (event) {
+            if (event.ctrlKey && event.key === "Enter") {
+                event.preventDefault();
+                if (!askBtn.disabled) {
+                    askQuestion();
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>
